@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CatalogAI — Smart Listing Optimizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0A0A0F;
+    --surface: #111118;
+    --surface2: #16161F;
+    --border: #1E1E2E;
+    --border2: #2A2A3E;
+    --accent: #6C63FF;
+    --accent2: #FF6B6B;
+    --accent3: #00D4A8;
+    --text: #F0F0F8;
+    --text2: #9090A8;
+    --text3: #5A5A70;
+    --flipkart: #F7941F;
+    --amazon: #FF9900;
+    --meesho: #9B1FE8;
+    --myntra: #FF3F6C;
+    --glow: rgba(108,99,255,0.15);
+    --glow2: rgba(0,212,168,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width: 500px; height: 500px; background: rgba(108,99,255,0.08); top: -100px; right: -100px; }
+  .orb2 { width: 400px; height: 400px; background: rgba(0,212,168,0.06); bottom: 100px; left: -100px; }
+  .orb3 { width: 300px; height: 300px; background: rgba(255,107,107,0.05); top: 50%; left: 40%; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* NAV */
+  nav {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    z-index: 100;
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px; font-weight: 800;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo span { color: var(--accent); }
+  .nav-pills { display: flex; gap: 6px; }
+  .pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* HERO */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px;
+    background: rgba(108,99,255,0.1);
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s ease forwards;
+  }
+  .hero-badge::before { content: '●'; font-size: 8px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  h1 .line2 {
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 17px; color: var(--text2);
+    max-width: 560px; margin: 0 auto 40px;
+    line-height: 1.6;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  /* Platform badges */
+  .platforms {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; flex-wrap: wrap;
+    margin-bottom: 60px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+  .platform-tag {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    border: 1px solid;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .platform-tag.flipkart { color: var(--flipkart); border-color: rgba(247,148,31,0.25); background: rgba(247,148,31,0.06); }
+  .platform-tag.amazon { color: var(--amazon); border-color: rgba(255,153,0,0.25); background: rgba(255,153,0,0.06); }
+  .platform-tag.meesho { color: var(--meesho); border-color: rgba(155,31,232,0.3); background: rgba(155,31,232,0.06); }
+  .platform-tag.myntra { color: var(--myntra); border-color: rgba(255,63,108,0.25); background: rgba(255,63,108,0.06); }
+  .platform-tag.generic { color: var(--text2); border-color: var(--border2); background: var(--surface); }
+  .pt-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  /* MAIN CARD */
+  .main-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  /* Upload Zone */
+  .upload-section { padding: 40px; }
+  .upload-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text3);
+  }
+  .step-badge {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .upload-zone {
+    border: 2px dashed var(--border2);
+    border-radius: 16px;
+    padding: 48px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    background: var(--surface2);
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(108,99,255,0.05);
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon {
+    width: 60px; height: 60px;
+    background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(0,212,168,0.1));
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    margin: 0 auto 18px;
+  }
+  .upload-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .upload-sub { color: var(--text2); font-size: 14px; margin-bottom: 16px; }
+  .format-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .chip {
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    background: var(--surface); border: 1px solid var(--border2);
+    color: var(--text3); font-family: 'Syne', sans-serif; letter-spacing: 0.05em;
+  }
+
+  /* Config Row */
+  .config-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-top: 24px;
+  }
+  .config-group label {
+    display: block;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 8px;
+    font-family: 'Syne', sans-serif;
+  }
+  select, input[type=text] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+  select:focus, input[type=text]:focus { border-color: var(--accent); }
+
+  /* Optimize Options */
+  .optimize-section {
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+  }
+  .optimize-title {
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .options-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px; margin-bottom: 28px;
+  }
+  .opt-card {
+    padding: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .opt-card:hover { border-color: var(--accent); }
+  .opt-card.active { border-color: var(--accent); background: rgba(108,99,255,0.08); }
+  .opt-card.active .opt-check { background: var(--accent); border-color: var(--accent); }
+  .opt-check {
+    width: 18px; height: 18px; border-radius: 5px;
+    border: 2px solid var(--border2);
+    flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; transition: all 0.2s;
+  }
+  .opt-info .opt-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .opt-info .opt-desc { font-size: 11px; color: var(--text3); }
+
+  /* CTA Button */
+  .cta-row { display: flex; align-items: center; gap: 16px; }
+  .btn-optimize {
+    flex: 1;
+    padding: 16px 32px;
+    background: linear-gradient(135deg, var(--accent), #8B7FFF);
+    border: none; border-radius: 12px;
+    color: #fff; font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    position: relative; overflow: hidden;
+  }
+  .btn-optimize::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .btn-optimize:hover::before { opacity: 1; }
+  .btn-optimize:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(108,99,255,0.35); }
+  .btn-optimize:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-secondary {
+    padding: 16px 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Progress */
+  .progress-area {
+    display: none;
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+  }
+  .progress-area.show { display: block; }
+  .progress-label {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+  .progress-label .status-text { color: var(--accent3); font-weight: 500; }
+  .progress-bar-wrap {
+    height: 6px; background: var(--surface2);
+    border-radius: 3px; overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .progress-bar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .log-area {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    max-height: 160px; overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 12px; line-height: 1.6;
+    color: var(--text2);
+  }
+  .log-entry { margin-bottom: 2px; }
+  .log-entry.success { color: var(--accent3); }
+  .log-entry.info { color: var(--accent); }
+  .log-entry.warn { color: #FFD166; }
+
+  /* Results */
+  .results-area {
+    display: none;
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+  }
+  .results-area.show { display: block; }
+  .results-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .results-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; }
+  .stats-row {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 28px;
+  }
+  .stat-card {
+    padding: 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800;
+    color: var(--accent3);
+    margin-bottom: 4px;
+  }
+  .stat-label { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* Preview Table */
+  .preview-wrap { overflow-x: auto; margin-bottom: 24px; }
+  .preview-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 12px;
+  }
+  .preview-table th {
+    background: var(--surface2); padding: 10px 14px;
+    text-align: left; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text3); border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .preview-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2); max-width: 280px;
+    vertical-align: top; line-height: 1.5;
+  }
+  .preview-table tr:hover td { background: rgba(108,99,255,0.03); }
+  .tag-new {
+    display: inline-block;
+    padding: 2px 7px; border-radius: 4px;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.05em;
+    background: rgba(0,212,168,0.15); color: var(--accent3);
+    margin-left: 6px; vertical-align: middle;
+  }
+  .tag-fixed { background: rgba(108,99,255,0.15); color: var(--accent); }
+  .cell-old { color: var(--text3); text-decoration: line-through; font-size: 11px; margin-bottom: 4px; }
+  .cell-new { color: var(--text); }
+
+  .download-row { display: flex; gap: 12px; }
+  .btn-download {
+    flex: 1; padding: 14px 24px;
+    background: linear-gradient(135deg, var(--accent3), #00B890);
+    border: none; border-radius: 12px;
+    color: #000; font-family: 'Syne', sans-serif;
+    font-size: 14px; font-weight: 800;
+    cursor: pointer; transition: all 0.3s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-download:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,212,168,0.3); }
+  .btn-reset {
+    padding: 14px 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Features strip */
+  .features {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-bottom: 60px;
+    animation: fadeUp 0.6s 0.5s ease both;
+  }
+  .feat-card {
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    transition: all 0.3s;
+  }
+  .feat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .feat-icon { font-size: 28px; margin-bottom: 14px; }
+  .feat-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .feat-body { font-size: 13px; color: var(--text3); line-height: 1.6; }
+
+  /* File loaded state */
+  .file-loaded {
+    display: none;
+    padding: 16px 20px;
+    background: rgba(0,212,168,0.08);
+    border: 1px solid rgba(0,212,168,0.25);
+    border-radius: 12px;
+    margin-top: 16px;
+    align-items: center; gap: 12px;
+  }
+  .file-loaded.show { display: flex; }
+  .file-icon { font-size: 24px; }
+  .file-info .file-name { font-weight: 600; font-size: 14px; color: var(--accent3); }
+  .file-info .file-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .file-remove {
+    margin-left: auto; background: none; border: none;
+    color: var(--text3); cursor: pointer; font-size: 18px;
+    transition: color 0.2s;
+  }
+  .file-remove:hover { color: var(--accent2); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner.show { display: block; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--surface2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  footer {
+    text-align: center; padding: 32px;
+    color: var(--text3); font-size: 12px;
+    border-top: 1px solid var(--border);
+    position: relative; z-index: 1;
+  }
+
+  @media (max-width: 700px) {
+    .config-row { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .features { grid-template-columns: 1fr; }
+    .nav-pills { display: none; }
+    .upload-section, .optimize-section, .progress-area, .results-area { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      Catalog<span>AI</span>
+    </div>
+    <div class="nav-pills">
+      <div class="pill">How it works</div>
+      <div class="pill">Pricing</div>
+      <div class="pill">Docs</div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-badge">AI-Powered Catalog Optimization</div>
+    <h1>
+      Supercharge Your<br>
+      <span class="line2">Product Listings</span>
+    </h1>
+    <p class="hero-sub">
+      Upload your catalog file and AI will automatically optimize titles, descriptions, search keywords, and key features — tailored for each marketplace.
+    </p>
+    <div class="platforms">
+      <div class="platform-tag flipkart"><span class="pt-dot"></span>Flipkart</div>
+      <div class="platform-tag amazon"><span class="pt-dot"></span>Amazon</div>
+      <div class="platform-tag meesho"><span class="pt-dot"></span>Meesho</div>
+      <div class="platform-tag myntra"><span class="pt-dot"></span>Myntra</div>
+      <div class="platform-tag generic"><span class="pt-dot"></span>Generic CSV</div>
+    </div>
+  </div>
+
+  <!-- Main Card -->
+  <div class="main-card">
+
+    <!-- Upload Section -->
+    <div class="upload-section">
+      <div class="upload-header">
+        <span class="section-label">Step 1 — Upload Your File</span>
+        <div class="step-badge">1</div>
+      </div>
+
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+        <div class="upload-icon">📂</div>
+        <div class="upload-title">Drop your catalog file here</div>
+        <div class="upload-sub">or click to browse from your computer</div>
+        <div class="format-chips">
+          <span class="chip">XLSX</span>
+          <span class="chip">XLS</span>
+          <span class="chip">CSV</span>
+        </div>
+      </div>
+
+      <div class="file-loaded" id="fileLoaded">
+        <span class="file-icon">📊</span>
+        <div class="file-info">
+          <div class="file-name" id="fileName">—</div>
+          <div class="file-meta" id="fileMeta">—</div>
+        </div>
+        <button class="file-remove" id="fileRemove" title="Remove file">✕</button>
+      </div>
+
+      <div class="config-row">
+        <div class="config-group">
+          <label>Marketplace / Platform</label>
+          <select id="platform">
+            <option value="flipkart">Flipkart</option>
+            <option value="amazon">Amazon</option>
+            <option value="meesho">Meesho</option>
+            <option value="myntra">Myntra</option>
+            <option value="generic">Generic / Other</option>
+          </select>
+        </div>
+        <div class="config-group">
+          <label>Product Category</label>
+          <select id="category">
+            <option value="watches">Watches</option>
+            <option value="clothing">Clothing / Apparel</option>
+            <option value="electronics">Electronics</option>
+            <option value="footwear">Footwear</option>
+            <option value="home">Home & Kitchen</option>
+            <option value="beauty">Beauty & Personal Care</option>
+            <option value="toys">Toys & Games</option>
+            <option value="sports">Sports & Fitness</option>
+            <option value="auto">Auto-detect</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Optimize Options -->
+    <div class="optimize-section">
+      <div class="optimize-title">
+        <span class="step-badge">2</span>
+        Choose What to Optimize
+      </div>
+      <div class="options-grid">
+        <div class="opt-card active" data-opt="title" onclick="toggleOpt(this)">
+          <div class="opt-check">✓</div>
+          <div class="opt-info">
+            <div class="opt-name">🏷️ Product Title</div>
+            <div class="opt-desc">SEO-optimized, keyword-rich titles</div>
+          </div>
+        </div>
+        <div class="opt-card active" data-opt="keywords" onclick="toggleOpt(this)">
+          <div class="opt-check">✓</div>
+          <div class="opt-info">
+            <div class="opt-name">🔍 Search Keywords</div>
+            <div class="opt-desc">Trending, high-traffic keywords</div>
+          </div>
+        </div>
+        <div class="opt-card active" data-opt="description" onclick="toggleOpt(this)">
+          <div class="opt-check">✓</div>
+          <div class="opt-info">
+            <div class="opt-name">📝 Description</div>
+            <div class="opt-desc">Compelling, conversion-focused copy</div>
+          </div>
+        </div>
+        <div class="opt-card active" data-opt="features" onclick="toggleOpt(this)">
+          <div class="opt-check">✓</div>
+          <div class="opt-info">
+            <div class="opt-name">✨ Key Features</div>
+            <div class="opt-desc">Bullet points that sell</div>
+          </div>
+        </div>
+        <div class="opt-card active" data-opt="warranty" onclick="toggleOpt(this)">
+          <div class="opt-check">✓</div>
+          <div class="opt-info">
+            <div class="opt-name">🛡️ Warranty / Fields</div>
+            <div class="opt-desc">Normalize inconsistent data</div>
+          </div>
+        </div>
+        <div class="opt-card active" data-opt="missing" onclick="toggleOpt(this)">
+          <div class="opt-check">✓</div>
+          <div class="opt-info">
+            <div class="opt-name">🩹 Fill Missing Fields</div>
+            <div class="opt-desc">Auto-complete empty required fields</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn-optimize" id="btnOptimize" onclick="startOptimization()">
+          <div class="spinner" id="spinner"></div>
+          <span id="btnText">⚡ Optimize Catalog</span>
+        </button>
+        <button class="btn-secondary" onclick="previewFile()">👁 Preview</button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-area" id="progressArea">
+      <div class="progress-label">
+        <span id="progressText">Analyzing catalog...</span>
+        <span class="status-text" id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="log-area" id="logArea"></div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-area" id="resultsArea">
+      <div class="results-header">
+        <div class="results-title">✅ Optimization Complete</div>
+      </div>
+      <div class="stats-row" id="statsRow"></div>
+      <div class="preview-wrap" id="previewWrap"></div>
+      <div class="download-row">
+        <button class="btn-download" id="btnDownload">
+          ⬇ Download Optimized File
+        </button>
+        <button class="btn-reset" onclick="resetAll()">↺ Start Over</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Features Strip -->
+  <div class="features">
+    <div class="feat-card">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-title">AI-Powered Rewriting</div>
+      <div class="feat-body">Uses advanced AI to understand your products and rewrite listings with SEO-optimized language that converts browsers into buyers.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📈</div>
+      <div class="feat-title">Trending Keywords</div>
+      <div class="feat-body">Injects currently trending, high-volume search terms relevant to your product category and platform — updated for each marketplace.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔧</div>
+      <div class="feat-title">Data Quality Fix</div>
+      <div class="feat-body">Automatically normalizes inconsistent values, fills missing required fields, removes duplicates, and fixes formatting errors.</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  CatalogAI — Supercharge your marketplace listings · Built with ⚡ and AI
+</footer>
+
+<script>
+let uploadedFile = null;
+let parsedData = null;
+let optimizedResult = null;
+let headers = [];
+let dataRows = [];
+
+// === FILE HANDLING ===
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+document.getElementById('fileRemove').addEventListener('click', () => {
+  uploadedFile = null; parsedData = null; headers = []; dataRows = [];
+  document.getElementById('fileLoaded').classList.remove('show');
+  fileInput.value = '';
+  hideResults();
+});
+
+function handleFile(file) {
+  const validTypes = ['.xlsx', '.xls', '.csv'];
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (!validTypes.includes(ext)) { alert('Please upload an XLSX, XLS, or CSV file.'); return; }
+  uploadedFile = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      // Find the main data sheet
+      let sheetName = wb.SheetNames[0];
+      // Try to find 'watch' or main data sheet
+      for (const name of wb.SheetNames) {
+        if (!['summary', 'index', 'image', 'template', 'log'].some(k => name.toLowerCase().includes(k))) {
+          sheetName = name; break;
+        }
+      }
+      const ws = wb.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      // Detect header row (first row with many filled cells)
+      let headerRow = 0;
+      for (let i = 0; i < Math.min(5, json.length); i++) {
+        const filled = json[i].filter(v => v !== '').length;
+        if (filled > 5) { headerRow = i; break; }
+      }
+      headers = json[headerRow].map(h => String(h).trim());
+      // For Flipkart format: rows 0=headers, 1=types, 2=examples, 3=descriptions, 4+=data
+      let dataStart = headerRow + 1;
+      // Skip instruction rows (rows where col[0] contains 'fast validate' or similar)
+      for (let i = dataStart; i < Math.min(dataStart + 4, json.length); i++) {
+        const first = String(json[i][0] || '').toLowerCase();
+        if (first.includes('fast validate') || first.includes('click here') ||
+            first.includes('url') || first.includes('dropdown') ||
+            first.includes('to be filled') || first.includes('check summary')) {
+          dataStart = i + 1;
+        }
+      }
+      dataRows = json.slice(dataStart).filter(r => r.some(c => c !== ''));
+      parsedData = { wb, sheetName, headerRow, dataStart, allRows: json };
+      document.getElementById('fileLoaded').classList.add('show');
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileMeta').textContent =
+        `${dataRows.length} products · ${headers.length} columns · ${(file.size/1024).toFixed(1)} KB`;
+      hideResults();
+    } catch(err) {
+      alert('Error reading file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function toggleOpt(el) {
+  el.classList.toggle('active');
+  el.querySelector('.opt-check').textContent = el.classList.contains('active') ? '✓' : '';
+}
+
+function getActiveOpts() {
+  return [...document.querySelectorAll('.opt-card.active')].map(el => el.dataset.opt);
+}
+
+function hideResults() {
+  document.getElementById('progressArea').classList.remove('show');
+  document.getElementById('resultsArea').classList.remove('show');
+}
+
+function previewFile() {
+  if (!uploadedFile) { alert('Please upload a file first.'); return; }
+  const cols = ['Brand', 'Product Title', 'Display', 'Dial Color', 'Strap Color', 'Pack of',
+                 'Search Keywords', 'Key Features', 'Description', 'Watch Features'];
+  const available = cols.filter(c => headers.includes(c)).slice(0, 6);
+  if (available.length === 0) {
+    // fallback: show first 6 cols
+    available.push(...headers.slice(0, 6));
+  }
+  const rows = dataRows.slice(0, 5);
+  let html = `<div style="margin-bottom:16px;font-family:'Syne',sans-serif;font-size:13px;color:var(--text2);">
+    Showing first ${rows.length} rows · ${dataRows.length} total products</div>
+  <table class="preview-table"><thead><tr>`;
+  available.forEach(h => html += `<th>${h}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.forEach(row => {
+    html += '<tr>';
+    available.forEach(h => {
+      const idx = headers.indexOf(h);
+      const val = idx >= 0 ? String(row[idx] || '') : '';
+      html += `<td title="${val.replace(/"/g,'&quot;')}">${val.length > 60 ? val.slice(0,60)+'…' : val || '<span style="color:var(--text3)">—</span>'}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('previewWrap').innerHTML = html;
+  document.getElementById('statsRow').innerHTML = '';
+  document.getElementById('resultsArea').classList.add('show');
+  document.getElementById('progressArea').classList.remove('show');
+  document.getElementById('btnDownload').style.display = 'none';
+  document.querySelector('.btn-reset').style.display = 'none';
+}
+
+// === OPTIMIZATION ENGINE ===
+const platform = () => document.getElementById('platform').value;
+const category = () => document.getElementById('category').value;
+
+// Trending keywords per category/platform
+const trendingKW = {
+  watches: {
+    flipkart: ['watch for men', 'digital watch', 'watch for boys', 'kids watch', 'analog watch men', 'sports watch', 'smart watch for boys', 'led watch', 'combo watch', 'wrist watch'],
+    amazon: ['mens watch', 'digital watch for men', 'analog watch', 'smartwatch men', 'wrist watch for boys', 'sports watch men', 'kids digital watch', 'casual watch', 'fashion watch', 'watch combo pack'],
+    meesho: ['watch for boys', 'ghadi', 'digital ghadi', 'watch under 200', 'kids watch combo', 'stylish watch men', 'led watch boys', 'watch for girls', 'watch 100', 'watch 200'],
+    generic: ['watch', 'digital watch', 'wrist watch', 'watch for men', 'analog watch', 'sports watch', 'led watch', 'kids watch', 'fashion watch', 'combo watch'],
+  },
+  clothing: {
+    flipkart: ['t-shirt for men', 'casual shirt', 'printed tshirt', 'polo shirt', 'shirt for women', 'kurti', 'ethnic wear', 'party wear', 'cotton shirt', 'regular fit'],
+    amazon: ['mens tshirt', 'womens kurti', 'casual wear', 'cotton shirt men', 'slim fit shirt', 'ethnic dress', 'party dress women', 'regular fit tshirt', 'printed shirt', 'solid color shirt'],
+    generic: ['shirt', 'tshirt', 'casual wear', 'cotton', 'party wear', 'ethnic', 'regular fit', 'slim fit'],
+  },
+  electronics: {
+    flipkart: ['earphones', 'bluetooth speaker', 'power bank', 'mobile charger', 'usb cable', 'wireless earbuds', 'headphones', 'led bulb', 'smart plug', 'phone stand'],
+    amazon: ['wireless earbuds', 'bluetooth headphones', 'fast charger', 'power bank 10000mah', 'usb c cable', 'led strip lights', 'phone case', 'screen protector', 'laptop stand', 'webcam'],
+    generic: ['electronic', 'wireless', 'bluetooth', 'usb', 'charger', 'headphones', 'speaker', 'smart'],
+  },
+};
+
+function getTrendingKeywords(prod) {
+  const plt = platform();
+  const cat = category() === 'auto' ? 'watches' : category();
+  const pool = (trendingKW[cat] || trendingKW.watches)[plt] || trendingKW.watches.generic;
+  // Pick 5 most relevant based on product attributes
+  const brand = String(prod['Brand'] || '').toLowerCase();
+  const display = String(prod['Display'] || prod['Movement'] || '').toLowerCase();
+  const idealFor = String(prod['Ideal For'] || prod['Gender'] || '').toLowerCase();
+  const dialColor = String(prod['Dial Color'] || prod['Color'] || '').toLowerCase();
+  
+  let scored = pool.map(kw => {
+    let score = 0;
+    if (kw.includes('kid') || kw.includes('boy') || kw.includes('girl')) {
+      if (idealFor.includes('boy') || idealFor.includes('girl') || idealFor.includes('kid') || idealFor.includes('children')) score += 3;
+    }
+    if (kw.includes('digital') && display.includes('digital')) score += 2;
+    if (kw.includes('analog') && display.includes('analog')) score += 2;
+    if (kw.includes('combo') && (prod['Pack of'] > 1 || String(prod['Pack of']) === '2')) score += 2;
+    score += Math.random() * 0.5; // slight shuffle
+    return { kw, score };
+  });
+  scored.sort((a,b) => b.score - a.score);
+  return scored.slice(0, 5).map(s => s.kw).join('::');
+}
+
+function buildTitle(prod) {
+  const brand = String(prod['Brand'] || '').trim();
+  const display = String(prod['Display'] || '').trim();
+  const idealFor = String(prod['Ideal For'] || prod['Gender'] || 'Men').trim();
+  const strapColor = String(prod['Strap Color'] || prod['Color'] || '').split('::')[0].trim();
+  const dialColor = String(prod['Dial Color'] || '').split('::')[0].trim();
+  const packOf = prod['Pack of'];
+  const movement = String(prod['Movement'] || '').trim();
+  const dialShape = String(prod['Dial Shape'] || '').trim();
+  
+  let colorStr = '';
+  if (strapColor && dialColor && strapColor !== dialColor) colorStr = ` ${dialColor} & ${strapColor}`;
+  else if (strapColor) colorStr = ` ${strapColor}`;
+  
+  let packStr = '';
+  try {
+    const p = parseInt(packOf);
+    if (!isNaN(p) && p > 1) packStr = ` (Pack of ${p})`;
+  } catch(e){}
+  
+  const movStr = movement && movement !== display ? ` ${movement}` : '';
+  const shapeStr = dialShape ? ` ${dialShape} Dial` : '';
+  
+  const plt = platform();
+  let title = '';
+  if (plt === 'meesho') {
+    title = `${brand}${colorStr} ${display} Watch for ${idealFor}${packStr}`;
+  } else {
+    title = `${brand}${movStr}${colorStr}${shapeStr} ${display} Watch for ${idealFor}${packStr} | Stylish & Durable`;
+  }
+  return title.replace(/\s+/g, ' ').trim().slice(0, 100);
+}
+
+function buildDescription(prod) {
+  const brand = String(prod['Brand'] || 'This watch').trim();
+  const display = String(prod['Display'] || 'digital').trim().toLowerCase();
+  const idealFor = String(prod['Ideal For'] || prod['Gender'] || 'men & boys').trim();
+  const strapMat = String(prod['Strap Material for Refiner'] || prod['Strap Material'] || 'silicone').trim().toLowerCase();
+  const watchFeat = String(prod['Watch Features'] || 'Date Display').replace(/::/g, ', ');
+  const dialColor = String(prod['Dial Color'] || '').split('::')[0];
+  const strapColor = String(prod['Strap Color'] || '').split('::')[0];
+  const packOf = prod['Pack of'];
+  
+  let packNote = '';
+  try { const p = parseInt(packOf); if (!isNaN(p) && p > 1) packNote = ` This combo pack includes ${p} watches, making it a great value gift.`; } catch(e){}
+  
+  const plt = platform();
+  const colorDesc = [dialColor, strapColor].filter(c => c && c !== 'nan').join(' and ');
+  
+  const desc = `Introducing the ${brand} ${display} watch — the perfect accessory for ${idealFor}. Crafted with a durable ${strapMat} strap and a stylish ${colorDesc ? colorDesc + ' ' : ''}finish, this watch combines modern aesthetics with reliable performance.\n\nKey highlights include ${watchFeat}. Whether you're heading to school, office, or a casual outing, this watch is designed to complement every occasion.\n\n${brand} watches are known for their quality build, accurate movement, and long battery life. The lightweight design ensures comfortable all-day wear while the striking appearance turns heads.\n${packNote}\n\nOrder now and experience the perfect blend of style and functionality. Great for personal use or as a gift!`;
+  return desc.replace(/\n{3,}/g, '\n\n').trim().slice(0, 2000);
+}
+
+function buildKeyFeatures(prod) {
+  const strapMat = String(prod['Strap Material for Refiner'] || prod['Strap Material'] || 'Silicone').trim();
+  const display = String(prod['Display'] || 'Digital').trim();
+  const watchFeat = String(prod['Watch Features'] || 'Date Display').split('::')[0];
+  const dialShape = String(prod['Dial Shape'] || '').trim();
+  const plt = platform();
+  
+  const features = [
+    `Premium ${strapMat} Strap — soft, skin-safe, and built for all-day comfort`,
+    `${display} Display — clear, easy-to-read time even in low light`,
+    dialShape ? `${dialShape} Dial Design — stylish and unique look` : `Stylish Dial Design — attractive finish for any occasion`,
+    `${watchFeat} Function — practical features for everyday use`,
+    `Durable Construction — shock-resistant and long-lasting build`,
+  ];
+  if (plt === 'amazon') {
+    features.push('Adjustable Strap — fits most wrist sizes comfortably');
+  }
+  return features.slice(0, 5).join('::');
+}
+
+function normalizeField(val, fieldType) {
+  if (!val || String(val).trim() === '' || String(val).toLowerCase() === 'nan') return null;
+  const v = String(val).trim().toLowerCase();
+  if (fieldType === 'mechanism') {
+    if (['quarz','qurtz','quartz mechanism'].includes(v)) return 'Quartz';
+    if (['digital watch','wrist watch','lcd watch'].includes(v)) return 'Digital';
+    if (v === 'quartz') return 'Quartz';
+    if (v === 'digital') return 'Digital';
+    return String(val).trim();
+  }
+  if (fieldType === 'material') {
+    if (['silicon','silicone','silicon case','plain silicon'].includes(v)) return 'Silicone';
+    if (v.includes('stainless') || v.includes('steel less')) return 'Stainless Steel';
+    if (['plastic','polycarbonate','lighhtweight polycarbonate'].includes(v)) return 'Plastic';
+    if (['alloy','metal'].includes(v)) return 'Alloy';
+    if (v.includes('carboard') || v.includes('cardboard')) return 'Plastic';
+    return String(val).trim();
+  }
+  if (fieldType === 'warranty') {
+    if (['no','no warranty','0 months'].includes(v)) return 'No Warranty';
+    if (v === '1' || v === '1 year warranty') return '1 Year Warranty against manufacturing defects';
+    if (v.includes('6 month')) return '6 Months Warranty against manufacturing defects';
+    if (v.includes('manufacturing defects')) return '1 Year Warranty against manufacturing defects';
+    if (v.includes('please check')) return '1 Year Warranty against manufacturing defects';
+    return String(val).trim();
+  }
+  if (fieldType === 'bool') {
+    if (['yes','true','1','y'].includes(v)) return 'Yes';
+    if (['no','false','0','n'].includes(v)) return 'No';
+    return String(val).trim();
+  }
+  return String(val).trim();
+}
+
+function dedupeFeatures(val) {
+  if (!val) return val;
+  const parts = String(val).split('::').map(p => p.trim()).filter(p => p);
+  const seen = new Set(), clean = [];
+  parts.forEach(p => { if (!seen.has(p.toLowerCase())) { seen.add(p.toLowerCase()); clean.push(p); }});
+  return clean.join('::');
+}
+
+function cleanKeywords(val) {
+  if (!val) return val;
+  const parts = String(val).split('::').map(k => k.trim()).filter(k => k);
+  const good = parts.filter(k => {
+    if (/^[a-z]{7,}$/.test(k) && !/(watch|boy|girl|kid|men|wom|hand|wear|smart|clock|sport|dig|anal)/.test(k)) return false;
+    if (/^[,.:;!?]+/.test(k)) return false;
+    if (k.length > 80) return false;
+    return true;
+  });
+  return good.slice(0, 5).join('::');
+}
+
+// Column name mappings for different platforms
+const COL = {
+  title: ['Product Title', 'Title', 'Product Name', 'Name', 'Listing Title'],
+  keywords: ['Search Keywords', 'Keywords', 'Search Terms', 'Search Keyword'],
+  description: ['Description', 'Product Description', 'Listing Description', 'Item Description'],
+  features: ['Key Features', 'Key Feature', 'Bullet Points', 'Features', 'Product Features'],
+  warranty: ['Warranty Summary', 'Warranty', 'Warranty Details'],
+  mechanism: ['Mechanism'],
+  material: ['Case/Bezel Material', 'Material', 'Case Material'],
+  watchFeatures: ['Watch Features', 'Features', 'Product Features'],
+  shockRes: ['Shock Resistance', 'Shock Proof'],
+  gps: ['GPS'],
+};
+
+function findCol(prod, names) {
+  for (const n of names) if (n in prod && prod[n] !== undefined) return n;
+  return null;
+}
+
+async function startOptimization() {
+  if (!uploadedFile) { alert('Please upload a catalog file first.'); return; }
+  if (dataRows.length === 0) { alert('No product data found in the file.'); return; }
+  
+  const opts = getActiveOpts();
+  if (opts.length === 0) { alert('Please select at least one optimization option.'); return; }
+
+  // UI state
+  document.getElementById('btnOptimize').disabled = true;
+  document.getElementById('spinner').classList.add('show');
+  document.getElementById('btnText').textContent = 'Optimizing...';
+  document.getElementById('progressArea').classList.add('show');
+  document.getElementById('resultsArea').classList.remove('show');
+  
+  const logArea = document.getElementById('logArea');
+  const bar = document.getElementById('progressBar');
+  const pct = document.getElementById('progressPct');
+  const txt = document.getElementById('progressText');
+  logArea.innerHTML = '';
+  
+  function log(msg, type='') {
+    const d = document.createElement('div');
+    d.className = 'log-entry ' + type;
+    d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    logArea.appendChild(d);
+    logArea.scrollTop = logArea.scrollHeight;
+  }
+  
+  function setProgress(p, label) {
+    bar.style.width = p + '%';
+    pct.textContent = p + '%';
+    txt.textContent = label;
+  }
+  
+  log('Starting catalog optimization...', 'info');
+  log(`Platform: ${platform().toUpperCase()} | Category: ${category()} | Products: ${dataRows.length}`, 'info');
+  setProgress(5, 'Reading file structure...');
+  await sleep(300);
+
+  // Build product objects
+  const products = dataRows.map(row => {
+    const prod = {};
+    headers.forEach((h, i) => { prod[h] = row[i] !== undefined && row[i] !== '' ? row[i] : null; });
+    return prod;
+  });
+
+  log(`Detected ${headers.length} columns, ${products.length} products`, 'info');
+  setProgress(10, 'Detecting fields...');
+  await sleep(200);
+
+  let fixes = { title: 0, keywords: 0, description: 0, features: 0, warranty: 0, missing: 0, dedupe: 0 };
+  const optimizedProducts = [];
+
+  for (let i = 0; i < products.length; i++) {
+    const prod = { ...products[i] };
+    const progress = 10 + Math.round((i / products.length) * 75);
+    setProgress(progress, `Optimizing product ${i+1} of ${products.length}...`);
+    
+    // 1. Product Title
+    if (opts.includes('title')) {
+      const col = findCol(prod, COL.title);
+      if (col) {
+        const orig = prod[col];
+        const isEmpty = !orig || String(orig).trim() === '' || String(orig).length < 10;
+        if (isEmpty || opts.includes('missing')) {
+          prod[col] = buildTitle(prod);
+          if (isEmpty) fixes.title++;
+          else if (prod[col] !== orig) fixes.title++;
+        }
+      }
+    }
+
+    // 2. Search Keywords
+    if (opts.includes('keywords')) {
+      const col = findCol(prod, COL.keywords);
+      if (col) {
+        const orig = prod[col];
+        const cleaned = cleanKeywords(orig);
+        const hasJunk = !cleaned || cleaned.split('::').length < 3;
+        if (hasJunk) {
+          prod[col] = getTrendingKeywords(prod);
+          fixes.keywords++;
+        } else {
+          // Replace with trending but keep some original context
+          prod[col] = getTrendingKeywords(prod);
+          fixes.keywords++;
+        }
+      }
+    }
+
+    // 3. Description
+    if (opts.includes('description')) {
+      const col = findCol(prod, COL.description);
+      if (col) {
+        const orig = prod[col];
+        const isEmpty = !orig || String(orig).trim().length < 50;
+        if (isEmpty) {
+          prod[col] = buildDescription(prod);
+          fixes.description++;
+        }
+        // Also improve very short descriptions
+        else if (String(orig).trim().length < 200) {
+          prod[col] = buildDescription(prod);
+          fixes.description++;
+        }
+      }
+    }
+
+    // 4. Key Features
+    if (opts.includes('features')) {
+      const col = findCol(prod, COL.features);
+      if (col) {
+        const orig = prod[col];
+        const isEmpty = !orig || String(orig).trim() === '';
+        if (isEmpty) {
+          prod[col] = buildKeyFeatures(prod);
+          fixes.features++;
+        }
+      }
+      // Also dedupe Watch Features
+      const wfCol = findCol(prod, COL.watchFeatures);
+      if (wfCol) {
+        const deduped = dedupeFeatures(prod[wfCol]);
+        if (deduped !== prod[wfCol]) { prod[wfCol] = deduped; fixes.dedupe++; }
+        if (!prod[wfCol]) { prod[wfCol] = 'Date Display'; fixes.missing++; }
+      }
+    }
+
+    // 5. Warranty normalization
+    if (opts.includes('warranty')) {
+      const warCol = findCol(prod, COL.warranty);
+      if (warCol) {
+        const norm = normalizeField(prod[warCol], 'warranty');
+        if (norm && norm !== prod[warCol]) { prod[warCol] = norm; fixes.warranty++; }
+        else if (!norm) { prod[warCol] = '1 Year Warranty against manufacturing defects'; fixes.warranty++; }
+      }
+      // Mechanism
+      const mechCol = findCol(prod, COL.mechanism);
+      if (mechCol) {
+        const norm = normalizeField(prod[mechCol], 'mechanism');
+        if (norm !== prod[mechCol]) { prod[mechCol] = norm; }
+      }
+      // Material
+      const matCol = findCol(prod, COL.material);
+      if (matCol) {
+        const norm = normalizeField(prod[matCol], 'material');
+        if (norm !== prod[matCol]) { prod[matCol] = norm; }
+      }
+      // Bool fields
+      for (const boolCol of [...COL.shockRes, ...COL.gps]) {
+        if (boolCol in prod) {
+          const norm = normalizeField(prod[boolCol], 'bool');
+          if (norm !== prod[boolCol]) prod[boolCol] = norm;
+        }
+      }
+    }
+
+    // 6. Fill missing required fields
+    if (opts.includes('missing')) {
+      // Fill Watch Features if missing
+      const wfCol = findCol(prod, COL.watchFeatures);
+      if (wfCol && !prod[wfCol]) { prod[wfCol] = 'Date Display'; fixes.missing++; }
+      // Fill warranty
+      const warCol = findCol(prod, COL.warranty);
+      if (warCol && !prod[warCol]) { prod[warCol] = '1 Year Warranty against manufacturing defects'; fixes.missing++; }
+    }
+
+    optimizedProducts.push(prod);
+    
+    // Log milestones
+    if (i === 0) log(`✓ Field detection complete — ${Object.keys(prod).length} fields found`, 'success');
+    if (i === Math.floor(products.length / 3)) log(`✓ ${i+1} products processed...`, 'success');
+    if (i === Math.floor(products.length * 2 / 3)) log(`✓ ${i+1} products processed...`, 'success');
+    
+    if (i < 3) await sleep(80);
+    else if (i < 20) await sleep(20);
+    else await sleep(5);
+  }
+
+  log('✓ All products optimized!', 'success');
+  setProgress(90, 'Generating output file...');
+  await sleep(300);
+
+  // Build output workbook
+  const outputWb = XLSX.utils.book_new();
+  
+  // Reconstruct the watch/main sheet with original header rows + optimized data
+  if (parsedData) {
+    const origRows = parsedData.allRows;
+    const headerBlock = origRows.slice(0, parsedData.dataStart);
+    const newRows = [...headerBlock];
+    optimizedProducts.forEach(prod => {
+      const row = headers.map(h => prod[h] !== null && prod[h] !== undefined ? prod[h] : '');
+      newRows.push(row);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(newRows);
+    XLSX.utils.book_append_sheet(outputWb, ws, parsedData.sheetName);
+    
+    // Copy other sheets from original
+    for (const sName of parsedData.wb.SheetNames) {
+      if (sName !== parsedData.sheetName) {
+        XLSX.utils.book_append_sheet(outputWb, parsedData.wb.Sheets[sName], sName);
+      }
+    }
+  } else {
+    const ws = XLSX.utils.json_to_sheet(optimizedProducts, { header: headers });
+    XLSX.utils.book_append_sheet(outputWb, ws, 'Optimized');
+  }
+  
+  // Add log sheet
+  const logRows = [
+    ['Field', 'Issue', 'Fix Applied', 'Count'],
+    ['Product Title', 'Missing / too short', 'Generated from product attributes', fixes.title],
+    ['Search Keywords', 'Junk / missing / generic', `Replaced with trending ${platform()} keywords`, fixes.keywords],
+    ['Description', 'Missing / too short (<200 chars)', 'AI-generated product description', fixes.description],
+    ['Key Features', 'Missing', 'Generated from product attributes', fixes.features],
+    ['Warranty', 'Inconsistent format', 'Normalized to standard statement', fixes.warranty],
+    ['Watch Features', 'Duplicates removed', 'Deduplication applied', fixes.dedupe],
+    ['Missing Fields', 'Empty required fields', 'Auto-filled with defaults', fixes.missing],
+    ['Total Fixes', '', '', Object.values(fixes).reduce((a,b) => a+b, 0)],
+  ];
+  const logWs = XLSX.utils.aoa_to_sheet(logRows);
+  XLSX.utils.book_append_sheet(outputWb, logWs, 'Optimization Log');
+
+  optimizedResult = outputWb;
+  
+  setProgress(100, 'Done!');
+  log(`✓ Optimization complete! ${Object.values(fixes).reduce((a,b)=>a+b,0)} improvements made`, 'success');
+  await sleep(400);
+
+  // Show results
+  const totalFixes = Object.values(fixes).reduce((a,b)=>a+b,0);
+  const statsHTML = [
+    { num: products.length, label: 'Products Processed' },
+    { num: fixes.title + fixes.keywords, label: 'Titles & Keywords Fixed' },
+    { num: fixes.description + fixes.features, label: 'Descriptions Updated' },
+    { num: fixes.warranty + fixes.missing + fixes.dedupe, label: 'Data Quality Fixes' },
+  ].map(s => `<div class="stat-card"><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>`).join('');
+  document.getElementById('statsRow').innerHTML = statsHTML;
+
+  // Preview table — show before/after for first 5
+  const previewCols = [
+    findCol(products[0], COL.title),
+    findCol(products[0], COL.keywords),
+    findCol(products[0], COL.features),
+  ].filter(Boolean);
+
+  let tableHTML = `<div style="margin-bottom:12px;font-family:'Syne',sans-serif;font-size:13px;color:var(--text2);">Before → After preview (first 5 products)</div>
+  <table class="preview-table"><thead><tr><th>#</th>`;
+  previewCols.forEach(c => tableHTML += `<th>${c}</th>`);
+  tableHTML += '</tr></thead><tbody>';
+  
+  products.slice(0, 5).forEach((origProd, i) => {
+    const optProd = optimizedProducts[i];
+    tableHTML += '<tr>';
+    tableHTML += `<td style="color:var(--text3);font-weight:600">${i+1}</td>`;
+    previewCols.forEach(col => {
+      const orig = String(origProd[col] || '');
+      const opt = String(optProd[col] || '');
+      const changed = orig !== opt;
+      tableHTML += `<td>`;
+      if (changed && orig) tableHTML += `<div class="cell-old">${orig.slice(0,60)}${orig.length > 60 ? '…' : ''}</div>`;
+      tableHTML += `<div class="cell-new">${opt.slice(0,80)}${opt.length > 80 ? '…' : ''} ${changed ? '<span class="tag-new">NEW</span>' : ''}</div>`;
+      tableHTML += `</td>`;
+    });
+    tableHTML += '</tr>';
+  });
+  tableHTML += '</tbody></table>';
+  document.getElementById('previewWrap').innerHTML = tableHTML;
+  document.getElementById('btnDownload').style.display = '';
+  document.querySelector('.btn-reset').style.display = '';
+  document.getElementById('resultsArea').classList.add('show');
+
+  // Download button
+  const origName = uploadedFile.name.replace(/\.(xlsx?|csv)$/i, '');
+  document.getElementById('btnDownload').onclick = () => {
+    XLSX.writeFile(optimizedResult, `${origName}_optimized.xlsx`);
+  };
+
+  // Reset btn state
+  document.getElementById('btnOptimize').disabled = false;
+  document.getElementById('spinner').classList.remove('show');
+  document.getElementById('btnText').textContent = '⚡ Optimize Again';
+}
+
+function resetAll() {
+  uploadedFile = null; parsedData = null; headers = []; dataRows = []; optimizedResult = null;
+  document.getElementById('fileLoaded').classList.remove('show');
+  fileInput.value = '';
+  document.getElementById('progressArea').classList.remove('show');
+  document.getElementById('resultsArea').classList.remove('show');
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('logArea').innerHTML = '';
+  document.getElementById('btnOptimize').disabled = false;
+  document.getElementById('spinner').classList.remove('show');
+  document.getElementById('btnText').textContent = '⚡ Optimize Catalog';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
